@@ -1,0 +1,96 @@
+#include <NewPing.h>
+#include <DHT.h>
+
+// Ultrasonic Sensor HC-SR04 connections:
+// VCC to 5V
+// Trig to digital pin 10
+// Echo to digital pin 12
+// GND to GND
+
+// LDR Sensor connections:
+// Signal to analog pin A1
+// VCC to 5V
+// GND to GND
+
+// DHT11 Sensor connections:
+// Signal to digital pin 2
+// VCC to 5V
+// GND to GND
+
+#define trigPin 10
+#define echoPin 12
+#define thresholdDistance 3 // Adjust this value as needed (in centimeters)
+
+#define buzzerPin 11 // Buzzer pin
+#define ldrPin A1    // LDR sensor pin
+#define ledPin 13    // LED pin
+
+#define dhtPin 2       // DHT11 sensor pin (updated to pin 2)
+#define dhtType DHT11 // DHT sensor type
+
+NewPing sonar(trigPin, echoPin); // Create a NewPing object
+DHT dht(dhtPin, dhtType);        // Create a DHT object
+
+void setup() {
+  // Initialize serial communication
+  Serial.begin(9600);
+
+  // Set up buzzer pin
+  pinMode(buzzerPin, OUTPUT);
+
+  // Set up LED pin
+  pinMode(ledPin, OUTPUT);
+
+  // Start the DHT sensor
+  dht.begin();
+}
+
+void loop() {
+  unsigned int distance_cm;
+
+  delay(50); // Optional delay for stability
+
+  // Get the distance in centimeters
+  distance_cm = sonar.ping_cm();
+
+  // LDR sensor measurement
+  int ldrValue = analogRead(ldrPin);
+
+  // DHT sensor readings
+  float temperature = dht.readTemperature(); // Use readTemperature() from the DHT library
+  float humidity = dht.readHumidity();       // Use readHumidity() from the DHT library
+
+  Serial.print("Distance: ");
+  Serial.print(distance_cm);
+  Serial.print(" cm | LDR Value: ");
+  Serial.print(ldrValue);
+  Serial.print(" | Temperature: ");
+  Serial.print(temperature);
+  Serial.print("°C | Humidity: ");
+  Serial.print(humidity);
+  Serial.println("%");
+
+  if (distance_cm == 0) {
+    Serial.println("No object detected");
+  } else {
+    if (distance_cm <= thresholdDistance) {
+      Serial.println("Crop reached its height! Turning on buzzer.");
+      digitalWrite(buzzerPin, HIGH);
+      // Add additional actions here if needed
+      delay(1000); // Buzzer on for 5 seconds
+      digitalWrite(buzzerPin, LOW); // Turn off the buzzer
+    }
+  }
+
+  // Check LDR value to detect a dark environment
+  if (ldrValue <= 1015) {
+    Serial.println("Dark environment detected. Turning on LED.");
+    digitalWrite(ledPin, HIGH);
+    // Add artificial light control logic here
+  } else {
+    digitalWrite(ledPin, LOW);
+  }
+
+  // You can add a delay if needed
+  delay(500);
+}
